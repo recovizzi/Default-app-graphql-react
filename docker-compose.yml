@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+  app:
+      build:
+        context: ./MainGraph
+        dockerfile: Dockerfile      
+      ports:
+        - "4000:4000"
+      volumes:
+        - ./MainGraph:/app
+        - /app/node_modules
+      environment:
+        # Utilisez postgres comme utilisateur pour correspondre à vos informations locales
+        DATABASE_URL: "postgresql://postgres:mysecretpassword@db:5432/postgres?schema=public"
+      depends_on:
+        - db
+        - prisma_migrate
+  appauth:
+    build:
+        context: ./AuthGraph
+        dockerfile: Dockerfile  
+    ports:
+      - "4001:4001"
+    volumes:
+      - ./AuthGraph:/appauth
+      - /appauth/node_modules
+    environment:
+      # Utilisez postgres comme utilisateur pour correspondre à vos informations locales
+      DATABASE_URL: "postgresql://postgres:mysecretpassword@db:5432/postgres?schema=public"
+    depends_on:
+      - db
+      - prisma_migrate
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      # Assurez-vous que l'utilisateur et la base de données correspondent à votre chaîne de connexion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  prisma_migrate:
+    build:
+      context: ./MainGraph  # or ./AuthGraph, depending on where the Dockerfile is
+    environment:
+      DATABASE_URL: "postgresql://postgres:mysecretpassword@db:5432/postgres?schema=public"
+    command: npx prisma migrate deploy
+    depends_on:
+      - db
+    restart: on-failure
+volumes:
+  postgres_data:

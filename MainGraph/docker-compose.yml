@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      # Utilisez postgres comme utilisateur pour correspondre à vos informations locales
+      DATABASE_URL: "postgresql://postgres:mysecretpassword@db:5432/postgres?schema=public"
+    depends_on:
+      - db
+      - prisma_migrate
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      # Assurez-vous que l'utilisateur et la base de données correspondent à votre chaîne de connexion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  prisma_migrate:
+    build: .
+    environment:
+      # Assurez-vous que cette URL correspond à celle de votre service d'application
+      DATABASE_URL: "postgresql://postgres:mysecretpassword@db:5432/postgres?schema=public"
+    command: npx prisma migrate deploy
+    depends_on:
+      - db
+volumes:
+  postgres_data:
